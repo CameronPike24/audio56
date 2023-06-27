@@ -401,38 +401,6 @@ class Recorder(object):
 
 
 
-    def perform_inference(wave_input_index,audio_frame):
-
-        ######################################################################
-        #Step 5 - loop through audio frames and perform inference
-        #####################################################################
-
-        #setup as a method 
-        audio_frame = np.reshape(audio_frame, (1, 15600))
-        interpreter.allocate_tensors()
-        interpreter.set_tensor(wave_input_index, audio_frame)
-        print("waveform_input_index")
-        print(wave_input_index)
-        interpreter.invoke()
-        #The below one is to use the default model - dont use for now
-        #scores = interpreter.get_tensor(scores_output_index)
-        #scores = interpreter.get_tensor(test_data.index_to_label)
-        #scores = interpreter.get_tensor(index_to_label)
-        #scores = interpreter.get_tensor(test_data)
-        #Below is the correct one to use for the bird model
-        self.scores = interpreter.get_tensor(self.scores_output_index_1)
-    
-        top_class_index = self.scores.argmax()
-        print("top_class_index")
-        print(top_class_index)
-
-        print(self._label_list_1[top_class_index])  # Should print code for bird.
-        #print(_label_list[spec_result_index])  # Should print name for bird.
-        #print("scores")
-        #print(scores)
-        #print(scores.shape)  # Should print (1, 5)            
-           
-        return self.scores
 
 
  
@@ -469,6 +437,43 @@ class Recorder(object):
         print("bird class")
         print(self._label_list[result_index_array])  
  
+
+
+
+    def perform_inference(wave_input_index,audio_frame):
+
+        ######################################################################
+        #Step 5 - loop through audio frames and perform inference
+        #####################################################################
+
+        #setup as a method 
+        audio_frame = np.reshape(audio_frame, (1, 15600))
+        self.interpreter.allocate_tensors()
+        self.interpreter.set_tensor(wave_input_index, audio_frame)
+        print("waveform_input_index")
+        print(wave_input_index)
+        self.interpreter.invoke()
+        #The below one is to use the default model - dont use for now
+        #scores = interpreter.get_tensor(scores_output_index)
+        #scores = interpreter.get_tensor(test_data.index_to_label)
+        #scores = interpreter.get_tensor(index_to_label)
+        #scores = interpreter.get_tensor(test_data)
+        #Below is the correct one to use for the bird model
+        self.scores = self.interpreter.get_tensor(self.scores_output_index_1)
+    
+        top_class_index = self.scores.argmax()
+        print("top_class_index")
+        print(top_class_index)
+
+        print(self._label_list_1[top_class_index])  # Should print code for bird.
+        #print(_label_list[spec_result_index])  # Should print name for bird.
+        #print("scores")
+        #print(scores)
+        #print(scores.shape)  # Should print (1, 5)            
+           
+        return self.scores
+
+
            
  
 REC = Recorder()
