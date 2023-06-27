@@ -57,7 +57,7 @@ class Recorder(object):
         self.AudioSource = autoclass('android.media.MediaRecorder$AudioSource')
         self.AudioFormat = autoclass('android.media.AudioFormat')
         self.AudioRecord = autoclass('android.media.AudioRecord')
-    # define our system
+        # define our system
         self.SampleRate = 44100
         #self.SampleRate = 16000
         self.ChannelConfig = self.AudioFormat.CHANNEL_IN_MONO
@@ -130,7 +130,32 @@ class Recorder(object):
         
       
         
-        
+        ###################################################
+        # Step 3 - Get input/output details of model to ensure the audio sample fits the model input
+        ######################################################
+
+        self.input_details = self.interpreter.get_input_details()
+        print("input_details")
+        print(self.input_details)
+        self.waveform_input_index = self.input_details[0]['index']
+        self.output_details = self.interpreter.get_output_details()
+        print("output_details")
+        print(self.output_details)
+
+        #Dont need this it is for the default Yamnet model
+        self.scores_output_index = self.output_details[0]['index']
+        print("scores_output_index 0")
+        print(self.scores_output_index)
+
+        #Get the output scores of the bird model
+        self.scores_output_index1 = self.output_details[1]['index']
+        print("")
+        #Shows 116
+        print(self.scores_output_index1)
+
+        #The below is to create a wavfile of silence for testing only
+        #Input: 0.975 seconds of silence as mono 16 kHz waveform samples.
+        #waveform = np.zeros(int(round(0.975 * 16000)), dtype=np.float32)        
         
  
     def mic_callback(self, buf):
@@ -230,6 +255,12 @@ class Recorder(object):
         
         #self.downsample()
         
+        #Once the recorded audio file has finished playing start the prediction step 4
+        self.prepare_audio_frames()
+        
+        
+        
+        
     '''
     def downsample(self):
         with open("rec_test1.wav", 'wb') as of:
@@ -248,35 +279,6 @@ class Recorder(object):
     '''
 
  
- 
-    def model_inputs(self):
-      
-        ###################################################
-        # Step 3 - Ensure the audio sample fits the model input
-        ######################################################
-
-        self.input_details = self.interpreter.get_input_details()
-        print("input_details")
-        print(input_details)
-        self.waveform_input_index = self.input_details[0]['index']
-        self.output_details = self.interpreter.get_output_details()
-        print("output_details")
-        print(self.output_details)
-
-        #Dont need this it is for the default Yamnet model
-        self.scores_output_index = self.output_details[0]['index']
-        print("scores_output_index 0")
-        print(self.scores_output_index)
-
-        #Get the output scores of the bird model
-        self.scores_output_index1 = self.output_details[1]['index']
-        print("")
-        print(self.scores_output_index1)
-
-        #The below is to create a wavfile of silence for testing only
-        #Input: 0.975 seconds of silence as mono 16 kHz waveform samples.
-        #waveform = np.zeros(int(round(0.975 * 16000)), dtype=np.float32)
-  
   
     def prepare_audio_frames(self):
     
@@ -285,39 +287,40 @@ class Recorder(object):
         ######################################################
 
         #random_audio = '/home/bevan/Downloads/gitfiles/audio tflite model/dataset/small_birds_dataset/test/houspa/House Sparrow.wav'
-        random_audio = '/home/bevan/Downloads/gitfiles/audio tflite model/dataset/small_birds_dataset/test/wbwwre1/White-breasted Wood-Wren.wav'
+        self.random_audio = 'White-breasted Wood-Wren.wav'
         #random_audio = '/home/bevan/Downloads/gitfiles/audio tflite model/dataset/small_birds_dataset/test/azaspi1/Azara_s Spinetail.wav'
         #random_audio = '/home/bevan/Downloads/gitfiles/audio tflite model/dataset/small_birds_dataset/test/chcant2/Chestnut-crowned Antpitta.wav'
         #random_audio = '/home/bevan/Downloads/gitfiles/audio tflite model/dataset/small_birds_dataset/test/redcro/Red Crossbill.wav'  
  
  
-        wav_file = wave.open(random_audio, 'rb')
+        self.wav_file = wave.open(self.random_audio, 'rb')
         # from .wav file to binary data in hexadecimal
-        binary_data = wav_file.readframes(wav_file.getnframes())
+        self.binary_data = self.wav_file.readframes(self.wav_file.getnframes())
         # from binary file to samples
-        audio_data = np.array(struct.unpack('{n}h'.format(n=wav_file.getnframes()*wav_file.getnchannels()), binary_data))
+        self.audio_data = np.array(struct.unpack('{n}h'.format(n=self.wav_file.getnframes()*self.wav_file.getnchannels()), self.binary_data))
         #print("output from wave")
         #print(audio_data)
         #print(len(audio_data))
 
         print("audio before tf.int16.max")
-        print(audio_data)
+        print(self.audio_data)
 
 
         #tf.int16.max prints out as 32767 so just use this instead
         #audio_data = np.array(audio_data) / tf.int16.max
 
-        audio_data = np.array(audio_data) / 32767
+        self.audio_data = np.array(self.audio_data) / 32767
 
         #input_size = serving_model.input_shape[1]
 
         ###This is the size of the frame. 0.975 secomds long and is 16000 samples = 15600. try changing but you need
         #to train the model on the different rate as well
-        input_size = 15600
-        print("input size")
-        print(input_size)
+        #Dont need input size not using tf
+        #input_size = 15600
+        #print("input size")
+        #print(input_size)
         print("audio before tf.signal.frame")
-        print(audio_data)
+        print(self.audio_data)
 
 
         #def framing(sig, fs=16000, win_len=0.025, win_hop=0.01):
@@ -370,8 +373,8 @@ class Recorder(object):
             idx1 = np.tile(np.arange(0, frame_length), (num_frames, 1))
             idx2 = np.tile(np.arange(0, num_frames * frame_step, frame_step), (frame_length, 1)).T
             indices = idx1 + idx2
-            frames = pad_signal[indices.astype(np.int32, copy=False)]
-            return frames
+            self.frames = pad_signal[indices.astype(np.int32, copy=False)]
+            return self.frames
 
 
 
@@ -379,25 +382,26 @@ class Recorder(object):
         #splitted_audio_data = tf.signal.frame(audio_data, input_size, input_size, pad_end=True, pad_value=0)
 
         #Use the numpy version not tensorflow
-        splitted_audio_data = framing(audio_data)
+        self.splitted_audio_data = framing(self.audio_data)
 
 
         #waveform = splitted_audio_data[0]
         #waveform = np.float32(waveform)
-        waveform = splitted_audio_data
-        waveform = np.float32(waveform)
+        self.waveform = self.splitted_audio_data
+        self.waveform = np.float32(self.waveform)
         print("waveform data")
-        print(waveform)
+        print(self.waveform)
 
         #This will show how many rows of frames there are eg (28, 15600) is 28 rows of frames
         print("waveform.shape")
-        print(waveform.shape) 
+        print(self.waveform.shape) 
  
+        self.start_inference()
  
 
 
 
-    def perform_inference(wave_input_index,audio_frame,scores_output_index_1,_label_list_1):
+    def perform_inference(wave_input_index,audio_frame):
 
         ######################################################################
         #Step 5 - loop through audio frames and perform inference
@@ -416,19 +420,19 @@ class Recorder(object):
         #scores = interpreter.get_tensor(index_to_label)
         #scores = interpreter.get_tensor(test_data)
         #Below is the correct one to use for the bird model
-        scores = interpreter.get_tensor(scores_output_index_1)
+        self.scores = interpreter.get_tensor(self.scores_output_index_1)
     
-        top_class_index = scores.argmax()
+        top_class_index = self.scores.argmax()
         print("top_class_index")
         print(top_class_index)
 
-        print(_label_list_1[top_class_index])  # Should print code for bird.
+        print(self._label_list_1[top_class_index])  # Should print code for bird.
         #print(_label_list[spec_result_index])  # Should print name for bird.
         #print("scores")
         #print(scores)
         #print(scores.shape)  # Should print (1, 5)            
            
-        return scores
+        return self.scores
 
 
  
@@ -439,11 +443,11 @@ class Recorder(object):
         #Step 6 - Start inference
         #####################################################################
         results_array = []
-        for i, data in enumerate(waveform):
+        for i, data in enumerate(self.waveform):
             print("data in enumerate")
             print(data)
             #waveform = np.reshape(waveform, (1, 15600))
-            inference_results = run_inference(waveform_input_index,data,scores_output_index1,_label_list)
+            inference_results = perform_inference(self.waveform_input_index,data)
             results_array.append(inference_results)
             print("results in enumerate at inference")
             print(results_array)
@@ -463,7 +467,7 @@ class Recorder(object):
         #print(f'Mean result: {test_data.index_to_label[result_index]} -> {mean_results[result_index]}')
         #print(_label_list_1[top_class_index]) 
         print("bird class")
-        print(_label_list[result_index_array])  
+        print(self._label_list[result_index_array])  
  
            
  
@@ -493,6 +497,7 @@ class RecordForm(BoxLayout): #
         #self.p_bar.max = recordtime
         #REC.prepare()
         REC.start()
+        #stop recording after recordtime value
         Clock.schedule_once(self.stop_record, recordtime)
         #Clock.schedule_interval(self.update_display, 1/30.)
  
