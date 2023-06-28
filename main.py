@@ -465,7 +465,7 @@ class Recorder(object):
         print("top_class_index")
         print(top_class_index)
 
-        print(self._label_list_1[top_class_index])  # Should print code for bird.
+        print(self._label_list[top_class_index])  # Should print code for bird.
         #print(_label_list[spec_result_index])  # Should print name for bird.
         #print("scores")
         #print(scores)
