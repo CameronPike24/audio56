@@ -459,7 +459,7 @@ class Recorder(object):
         #scores = interpreter.get_tensor(index_to_label)
         #scores = interpreter.get_tensor(test_data)
         #Below is the correct one to use for the bird model
-        self.scores = self.interpreter.get_tensor(self.scores_output_index_1)
+        self.scores = self.interpreter.get_tensor(self.scores_output_index1)
     
         top_class_index = self.scores.argmax()
         print("top_class_index")
